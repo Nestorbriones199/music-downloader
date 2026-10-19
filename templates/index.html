@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Music Downloader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0d0d0f;
+    --surface:   #17171b;
+    --border:    #2a2a32;
+    --accent:    #7c5cfc;
+    --accent2:   #c45cfc;
+    --text:      #e8e8f0;
+    --muted:     #7070888;
+    --muted:     #70708a;
+    --success:   #4fc98e;
+    --warn:      #f0b429;
+    --error:     #f06060;
+    --radius:    10px;
+    --mono:      'DM Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .shell {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 48px;
+  }
+  .logo {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  header p {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .badge {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 20px;
+    padding: 3px 10px;
+    flex-shrink: 0;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Input group ── */
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+  .url-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 12px 16px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .url-input::placeholder { color: var(--muted); }
+  .url-input:focus { border-color: var(--accent); }
+
+  .btn {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    padding: 12px 22px;
+    transition: opacity .15s, transform .1s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 13px;
+    padding: 9px 16px;
+  }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-success {
+    background: var(--success);
+    color: #0d0d0f;
+    font-weight: 600;
+  }
+
+  /* ── Platform chip ── */
+  .platform-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .chip.yt  { border-color: #f03; color: #f03; }
+  .chip.sc  { border-color: #f50; color: #f50; }
+
+  /* ── Progress section ── */
+  #progress-section { display: none; }
+
+  .status-line {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 18px;
+    min-height: 18px;
+  }
+
+  .playlist-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .playlist-meta h2 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .count-chip {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: #ffffff10;
+    border-radius: 20px;
+    padding: 2px 9px;
+    color: var(--muted);
+  }
+
+  /* ── Global progress bar ── */
+  .bar-wrap {
+    height: 4px;
+    background: var(--border);
+    border-radius: 4px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 4px;
+    width: 0%;
+    transition: width .4s ease;
+  }
+
+  /* ── Track list ── */
+  .tracks-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .tracks-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+  }
+
+  #track-list {
+    list-style: none;
+    max-height: 380px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  #track-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 4px;
+    border-bottom: 1px solid #ffffff06;
+    font-size: 13px;
+  }
+  #track-list li:last-child { border-bottom: none; }
+  .track-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    width: 22px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .track-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .track-status {
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .track-status.done    { color: var(--success); }
+  .track-status.loading { color: var(--accent);  animation: pulse 1s infinite; }
+
+  /* ── Track mini progress bar ── */
+  .track-bar {
+    width: 60px;
+    height: 3px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .track-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width .3s;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: .3; }
+  }
+
+  /* ── Actions ── */
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+  }
+
+  /* ── Log ── */
+  details {
+    margin-top: 16px;
+  }
+  summary {
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    user-select: none;
+  }
+  #log-box {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    max-height: 140px;
+    overflow-y: auto;
+    margin-top: 8px;
+    line-height: 1.8;
+    scrollbar-width: thin;
+  }
+
+  /* ── Empty / error state ── */
+  .state-msg {
+    text-align: center;
+    padding: 32px 0 8px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .state-msg span { font-size: 28px; display: block; margin-bottom: 8px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 520px) {
+    .input-row { flex-direction: column; }
+    .btn-primary { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="logo">🎛️</div>
+    <div>
+      <h1>Music Downloader</h1>
+      <p>YouTube &amp; SoundCloud → MP3</p>
+    </div>
+    <div class="badge">320 kbps</div>
+  </header>
+
+  <!-- Input card -->
+  <div class="card">
+    <div class="input-row">
+      <input id="url-input" class="url-input" type="url"
+             placeholder="Pega aquí el link de la playlist o canción…">
+      <button id="btn-download" class="btn btn-primary" onclick="startDownload()">
+        Descargar
+      </button>
+    </div>
+    <div class="platform-row">
+      <span class="chip yt">YouTube</span>
+      <span class="chip sc">SoundCloud</span>
+      <span class="chip">Playlists completas</span>
+      <span class="chip">Tracks individuales</span>
+    </div>
+  </div>
+
+  <!-- Progress card -->
+  <div id="progress-section" class="card">
+    <p class="status-line" id="status-line">Iniciando…</p>
+
+    <!-- FFmpeg progress -->
+    <div id="ffmpeg-progress" style="display:none; margin-bottom:18px;">
+      <p style="font-size:12px; color:var(--warn); margin-bottom:6px;">
+        ⚙️ Instalando FFmpeg por primera vez…
+      </p>
+      <div class="bar-wrap">
+        <div class="bar-fill" id="ffmpeg-bar" style="background: var(--warn);"></div>
+      </div>
+    </div>
+
+    <div id="meta-section" style="display:none;">
+      <div class="playlist-meta">
+        <h2 id="playlist-title">—</h2>
+        <span class="count-chip" id="count-chip"></span>
+      </div>
+      <div class="bar-wrap">
+        <div class="bar-fill" id="global-bar"></div>
+      </div>
+
+      <div class="tracks-header">
+        <span class="tracks-label">Canciones</span>
+        <span id="done-count" style="font-size:12px; color:var(--muted); font-family:var(--mono)"></span>
+      </div>
+      <ul id="track-list"></ul>
+
+      <div class="actions" id="actions" style="display:none;">
+        <button class="btn btn-success" onclick="downloadZip()">⬇ Descargar ZIP</button>
+        <button class="btn btn-ghost"   onclick="openFolder()">📂 Abrir carpeta</button>
+        <button class="btn btn-ghost"   onclick="reset()">Nueva descarga</button>
+      </div>
+    </div>
+
+    <details>
+      <summary>Ver log</summary>
+      <div id="log-box"></div>
+    </details>
+  </div>
+
+</div>
+
+<script>
+  let sessionId  = null;
+  let totalTracks = 0;
+  let doneCount   = 0;
+  let trackMap    = {};   // nombre → li element
+
+  // ── Helpers ──────────────────────────────────
+  function $(id) { return document.getElementById(id); }
+
+  function setStatus(msg) {
+    $('status-line').textContent = msg;
+  }
+
+  function log(msg) {
+    const b = $('log-box');
+    b.innerHTML += `<div>${msg}</div>`;
+    b.scrollTop = b.scrollHeight;
+  }
+
+  function updateGlobalBar() {
+    const pct = totalTracks > 0 ? Math.round(doneCount / totalTracks * 100) : 0;
+    $('global-bar').style.width = pct + '%';
+    $('done-count').textContent = `${doneCount} / ${totalTracks}`;
+  }
+
+  function addTrack(name, index) {
+    if (trackMap[name]) return;
+    const li = document.createElement('li');
+    li.innerHTML = `
+      <span class="track-num">${String(index).padStart(2,'0')}</span>
+      <span class="track-name" title="${name}">${name}</span>
+      <div class="track-bar"><div class="track-bar-fill" id="tb-${index}"></div></div>
+      <span class="track-status loading" id="ts-${index}">⟳</span>
+    `;
+    $('track-list').appendChild(li);
+    trackMap[name] = index;
+  }
+
+  function markTrackDone(name) {
+    const idx = trackMap[name];
+    if (idx === undefined) return;
+    const fill = $(`tb-${idx}`);
+    const icon = $(`ts-${idx}`);
+    if (fill) fill.style.width = '100%';
+    if (icon) { icon.textContent = '✓'; icon.className = 'track-status done'; }
+    doneCount++;
+    updateGlobalBar();
+  }
+
+  function updateTrackProgress(name, pct) {
+    const idx = trackMap[name];
+    if (idx === undefined) return;
+    const fill = $(`tb-${idx}`);
+    if (fill) fill.style.width = pct + '%';
+  }
+
+  let trackCounter = 0;
+  let currentTrack = null;
+
+  // ── Start download ────────────────────────────
+  async function startDownload() {
+    const url = $('url-input').value.trim();
+    if (!url) { $('url-input').focus(); return; }
+
+    // Reset state
+    sessionId = null; totalTracks = 0; doneCount = 0;
+    trackMap = {}; trackCounter = 0; currentTrack = null;
+    $('track-list').innerHTML = '';
+    $('log-box').innerHTML    = '';
+    $('actions').style.display = 'none';
+    $('meta-section').style.display = 'none';
+    $('ffmpeg-progress').style.display = 'none';
+    $('global-bar').style.width = '0%';
+
+    $('btn-download').disabled = true;
+    $('progress-section').style.display = 'block';
+    setStatus('Conectando…');
+
+    const res = await fetch('/api/start', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ url })
+    });
+    const data = await res.json();
+    if (data.error) { setStatus('❌ ' + data.error); $('btn-download').disabled = false; return; }
+
+    sessionId = data.session_id;
+    listenEvents(sessionId);
+  }
+
+  // ── SSE listener ─────────────────────────────
+  function listenEvents(sid) {
+    const es = new EventSource(`/api/events/${sid}`);
+
+    es.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+
+      if (msg.type === 'status') {
+        setStatus(msg.msg);
+        log(msg.msg);
+      }
+
+      else if (msg.type === 'ffmpeg') {
+        $('ffmpeg-progress').style.display = 'block';
+        setStatus(msg.msg);
+        log(msg.msg);
+      }
+
+      else if (msg.type === 'ffmpeg_progress') {
+        $('ffmpeg-bar').style.width = msg.pct + '%';
+      }
+
+      else if (msg.type === 'meta') {
+        $('ffmpeg-progress').style.display = 'none';
+        $('meta-section').style.display   = 'block';
+        $('playlist-title').textContent    = msg.title;
+        totalTracks = msg.total;
+        $('count-chip').textContent = `${msg.total} canciones`;
+        updateGlobalBar();
+        setStatus('Descargando…');
+      }
+
+      else if (msg.type === 'progress') {
+        // Si es un track nuevo
+        if (msg.file !== currentTrack) {
+          currentTrack = msg.file;
+          trackCounter++;
+          addTrack(msg.file, trackCounter);
+          setStatus(`Descargando ${trackCounter}/${totalTracks} — ${msg.file.slice(0,50)}`);
+        }
+        updateTrackProgress(msg.file, msg.pct);
+      }
+
+      else if (msg.type === 'track_done') {
+        markTrackDone(msg.file);
+      }
+
+      else if (msg.type === 'log') {
+        log(msg.msg);
+      }
+
+      else if (msg.type === 'done') {
+        // Rellenar tracks con los archivos reales (mp3)
+        $('track-list').innerHTML = '';
+        trackMap = {}; doneCount = msg.tracks.length;
+        msg.tracks.forEach((t, i) => {
+          addTrack(t, i + 1);
+          markTrackDone(t);
+        });
+        totalTracks = msg.tracks.length;
+        updateGlobalBar();
+        setStatus(`✅ ¡Listo! ${msg.tracks.length} canciones descargadas.`);
+        $('actions').style.display = 'flex';
+        $('btn-download').disabled = false;
+        es.close();
+      }
+
+      else if (msg.type === 'error') {
+        setStatus('❌ ' + msg.msg);
+        log('ERROR: ' + msg.msg);
+        $('btn-download').disabled = false;
+        es.close();
+      }
+    };
+
+    es.onerror = () => {
+      setStatus('❌ Se perdió la conexión con el servidor.');
+      $('btn-download').disabled = false;
+      es.close();
+    };
+  }
+
+  // ── Actions ───────────────────────────────────
+  function downloadZip() {
+    if (!sessionId) return;
+    window.location.href = `/api/download_zip/${sessionId}`;
+  }
+
+  async function openFolder() {
+    if (!sessionId) return;
+    const res = await fetch(`/api/open_folder/${sessionId}`);
+    const d   = await res.json();
+    if (!d.ok) alert('No se pudo abrir la carpeta.');
+  }
+
+  function reset() {
+    $('progress-section').style.display = 'none';
+    $('url-input').value = '';
+    $('url-input').focus();
+    $('btn-download').disabled = false;
+    sessionId = null;
+  }
+
+  // Enter para descargar
+  $('url-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') startDownload();
+  });
+</script>
+</body>
+</html>
