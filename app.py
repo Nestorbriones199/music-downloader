@@ -284,10 +284,11 @@ def open_folder(session_id):
 
 
 if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
     print()
     print("╔══════════════════════════════════════╗")
     print("║  🎵  Music Downloader  — iniciando   ║")
-    print("║  Abre: http://localhost:5000          ║")
+    print(f"║  Abre: http://localhost:{port}          ║")
     print("╚══════════════════════════════════════╝")
     print()
-    app.run(debug=False, threaded=True, port=5000)
+    app.run(debug=False, threaded=True, host="0.0.0.0", port=port)
